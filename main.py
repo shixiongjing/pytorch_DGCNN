@@ -196,7 +196,7 @@ def loop_dataset(g_list, classifier, sample_idxes, optimizer=None, bsize=cmd_arg
     return avg_loss
 
 
-def old_main:
+def old_main():
     print(cmd_args)
     random.seed(cmd_args.seed)
     np.random.seed(cmd_args.seed)
@@ -248,7 +248,7 @@ def old_main:
         labels = labels.type('torch.FloatTensor')
         np.savetxt('extracted_features_test.txt', torch.cat([labels.unsqueeze(1), features.cpu()], dim=1).detach().numpy(), '%.4f')
 
-def new_main:
+def new_main():
     print(cmd_args)
     random.seed(cmd_args.seed)
     np.random.seed(cmd_args.seed)

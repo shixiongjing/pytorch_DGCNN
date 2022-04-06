@@ -100,7 +100,6 @@ class GNNGraph(object):
             self.node_features = self.node_features + feat_noise
         self.node_tags[j] = tag_noise
 
-        for x in adj_noise:
 
 
 

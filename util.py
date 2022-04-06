@@ -78,6 +78,35 @@ class GNNGraph(object):
                 self.edge_features.append(edge_features[edge])  # add reversed edges
             self.edge_features = np.concatenate(self.edge_features, 0)
 
+        # Append Node assume no edge features
+
+    def append_node(self):
+        j = self.num_nodes
+        self.num_nodes += 1
+
+        self.node_tags.append(7) # Here just assign to random tag
+        self.g.add_node(j)
+        self.g.add_edge(j, 1)
+        if node_features is not None:
+            feature_size = self.node_features.shape
+            noise_X = np.zeros((1, feature_size[1]))
+            self.node_features = np.append(self.node_features, noise_X, axis = 0)
+        self.degs = list(dict(g.degree).values())
+        self.edge_pairs = np.append(self.edge_pairs, [j,1])
+
+    def modify_last_node(self, adj_noise, feat_noise, tag_noise):
+        j = self.num_nodes - 1
+        if node_features is not None:
+            self.node_features = self.node_features + feat_noise
+        self.node_tags[j] = tag_noise
+
+        for x in adj_noise:
+
+
+
+
+        
+
 
 def load_data():
 

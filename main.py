@@ -16,6 +16,8 @@ from mlp_dropout import MLPClassifier, MLPRegression
 from sklearn import metrics
 from util import cmd_args, load_data
 
+option = 1
+
 class Classifier(nn.Module):
     def __init__(self, regression=False):
         super(Classifier, self).__init__()
@@ -145,13 +147,19 @@ def loop_dataset(g_list, classifier, sample_idxes, optimizer=None, bsize=cmd_arg
         selected_idx = sample_idxes[pos * bsize : (pos + 1) * bsize]
 
         batch_graph = [g_list[idx] for idx in selected_idx]
+        # Try modify batch graph data type
+        #batch_graph = [torch.from_numpy(nx.to_scipy_sparse_matrix(g)).to_sparse() for graph.g in g_list]
+        tag_list = [t in graph.tag_list for graph in g_list]
+        node_features = None
+        # End edition
+
         targets = [g_list[idx].label for idx in selected_idx]
         all_targets += targets
         if classifier.regression:
-            pred, mae, loss = classifier(batch_graph)
+            pred, mae, loss = classifier(batch_graph, tag_list, node_features)
             all_scores.append(pred.cpu().detach())  # for binary classification
         else:
-            logits, loss, acc = classifier(batch_graph)
+            logits, loss, acc = classifier(batch_graph, tag_list, node_features)
             all_scores.append(logits[:, 1].cpu().detach())  # for binary classification
 
         if optimizer is not None:
@@ -188,7 +196,7 @@ def loop_dataset(g_list, classifier, sample_idxes, optimizer=None, bsize=cmd_arg
     return avg_loss
 
 
-if __name__ == '__main__':
+def old_main:
     print(cmd_args)
     random.seed(cmd_args.seed)
     np.random.seed(cmd_args.seed)
@@ -239,3 +247,62 @@ if __name__ == '__main__':
         features, labels = classifier.output_features(test_graphs)
         labels = labels.type('torch.FloatTensor')
         np.savetxt('extracted_features_test.txt', torch.cat([labels.unsqueeze(1), features.cpu()], dim=1).detach().numpy(), '%.4f')
+
+def new_main:
+    print(cmd_args)
+    random.seed(cmd_args.seed)
+    np.random.seed(cmd_args.seed)
+    torch.manual_seed(cmd_args.seed)
+
+    train_graphs, test_graphs = load_data()
+    print('# train: %d, # test: %d' % (len(train_graphs), len(test_graphs)))
+
+    if cmd_args.sortpooling_k <= 1:
+        num_nodes_list = sorted([g.num_nodes for g in train_graphs + test_graphs])
+        cmd_args.sortpooling_k = num_nodes_list[int(math.ceil(cmd_args.sortpooling_k * len(num_nodes_list))) - 1]
+        cmd_args.sortpooling_k = max(10, cmd_args.sortpooling_k)
+        print('k used in SortPooling is: ' + str(cmd_args.sortpooling_k))
+
+    classifier = Classifier()
+    if cmd_args.mode == 'gpu':
+        classifier = classifier.cuda()
+
+    optimizer = optim.Adam(classifier.parameters(), lr=cmd_args.learning_rate)
+
+    train_idxes = list(range(len(train_graphs)))
+    best_loss = None
+    for epoch in range(cmd_args.num_epochs):
+        random.shuffle(train_idxes)
+        classifier.train()
+        avg_loss = loop_dataset(train_graphs, classifier, train_idxes, optimizer=optimizer)
+        if not cmd_args.printAUC:
+            avg_loss[2] = 0.0
+        print('\033[92maverage training of epoch %d: loss %.5f acc %.5f auc %.5f\033[0m' % (epoch, avg_loss[0], avg_loss[1], avg_loss[2]))
+
+        classifier.eval()
+        test_loss = loop_dataset(test_graphs, classifier, list(range(len(test_graphs))))
+        if not cmd_args.printAUC:
+            test_loss[2] = 0.0
+        print('\033[93maverage test of epoch %d: loss %.5f acc %.5f auc %.5f\033[0m' % (epoch, test_loss[0], test_loss[1], test_loss[2]))
+
+    with open(cmd_args.data + '_acc_results.txt', 'a+') as f:
+        f.write(str(test_loss[1]) + '\n')
+
+    if cmd_args.printAUC:
+        with open(cmd_args.data + '_auc_results.txt', 'a+') as f:
+            f.write(str(test_loss[2]) + '\n')
+
+    if cmd_args.extract_features:
+        features, labels = classifier.output_features(train_graphs)
+        labels = labels.type('torch.FloatTensor')
+        np.savetxt('extracted_features_train.txt', torch.cat([labels.unsqueeze(1), features.cpu()], dim=1).detach().numpy(), '%.4f')
+        features, labels = classifier.output_features(test_graphs)
+        labels = labels.type('torch.FloatTensor')
+        np.savetxt('extracted_features_test.txt', torch.cat([labels.unsqueeze(1), features.cpu()], dim=1).detach().numpy(), '%.4f')
+
+
+if __name__ == '__main__':
+    if option == 0:
+        old_main()
+    elif option == 1:
+        new_main()

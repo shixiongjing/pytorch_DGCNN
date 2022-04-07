@@ -324,12 +324,12 @@ def new_main():
                     for loop_idx in selected_idx:
                         if tag_noise[loop_idx] == -1:
                             tag_noise[loop_idx] = 0
-                            g_list[loop_idx].append_node()
+                            clean_train_graphs[loop_idx].append_node()
 
                     batch_graph = [torch.from_numpy(nx.to_numpy_array(g_list[idx].g))+adj_noise[train_idx] for idx in selected_idx]
-                    tag_lists = [g_list[idx].node_tags.append(tag_noise[idx]) for idx in selected_idx]
+                    tag_lists = [clean_train_graphs[idx].node_tags.append(tag_noise[idx]) for idx in selected_idx]
                     node_features = None
-                    labels = [g_list[idx].label for idx in selected_idx]
+                    labels = [clean_train_graphs[idx].label for idx in selected_idx]
 
 
                     

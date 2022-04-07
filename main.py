@@ -292,7 +292,7 @@ def new_main():
         return [x+1, x+1]
 
     adj_noise = [torch.zeros(get_inc_shape(clean_train_graphs[i])) for i in range(noise_len)]
-    tag_noise = [-1 for i in range(noise_len)]
+    tag_noise = [0 if i < noise_len else 6 for i in range(noise_len+1)]
 
 
     while condition:
@@ -330,8 +330,8 @@ def new_main():
 
                             #assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
 
-                    batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g))+adj_noise[idx] for idx in selected_idx]
-                    tag_lists = [clean_train_graphs[idx].node_tags + [tag_noise[idx]] for idx in selected_idx]
+                    batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g)).add(adj_noise[idx]) for idx in selected_idx]
+                    tag_lists = [clean_train_graphs[idx].node_tags.add(tag_noise[idx]) for idx in selected_idx]
                     print('size1'+str(len(tag_lists[0]))+'size graph' + str(batch_graph[0].shape))
                     node_features = None
                     labels = [clean_train_graphs[idx].label for idx in selected_idx]

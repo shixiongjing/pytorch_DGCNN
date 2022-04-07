@@ -14,7 +14,7 @@ import pdb
 from DGCNN_embedding import DGCNN
 from mlp_dropout import MLPClassifier, MLPRegression
 from sklearn import metrics
-from util import cmd_args, load_data
+from util import cmd_args, load_data, GNNGraph
 import networkx as nx
 
 option = 1

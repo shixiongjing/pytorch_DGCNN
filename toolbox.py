@@ -44,7 +44,7 @@ class PerturbationTool():
             loss.backward()
             eta_adj = self.step_size * perturb_batch_graph.grad.data.sign() * (-1)
             eta_tag = self.step_size * perturb_tag_lists.grad.data.sign() * (-1)
-            
+            quit()
 
             perturb_img = Variable(perturb_img.data + eta, requires_grad=True)
             eta = torch.clamp(perturb_img.data - images.data, -self.epsilon, self.epsilon)

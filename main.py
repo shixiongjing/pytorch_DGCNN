@@ -294,6 +294,8 @@ def new_main():
     adj_noise = [torch.zeros(get_inc_shape(clean_train_graphs[i])) for i in range(noise_len)]
     tag_noise = [torch.zeros(clean_train_graphs[i].num_nodes + 1) for i in range(noise_len)]
 
+    first_round = True
+
 
     while condition:
         train_idxes = list(range(len(clean_train_graphs)))
@@ -323,8 +325,7 @@ def new_main():
                     
                     # Update noise to graphs
                     for loop_idx in selected_idx:
-                        if tag_noise[loop_idx] == -1:
-                            tag_noise[loop_idx] = 0
+                        if first_round:
                             clean_train_graphs[loop_idx].append_node()
                             #print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[loop_idx].g).shape) + 'b'+str(adj_noise[loop_idx].shape))
 
@@ -403,7 +404,9 @@ def new_main():
             acc = correct / total
             print('Accuracy %.2f' % (acc*100))
             if acc > 0.99:
-                condition=False      
+                condition=False    
+
+            first_round = False
 
 
 

@@ -325,8 +325,10 @@ def new_main():
                         if tag_noise[loop_idx] == -1:
                             tag_noise[loop_idx] = 0
                             clean_train_graphs[loop_idx].append_node()
+                            assert len(clean_train_graphs[loop_idx].g) == clean_train_graphs[loop_idx].num_nodes
 
                     print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[0].g).shape) + 'b'+str(adj_noise[0].shape))
+
                     batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g))+adj_noise[train_idx] for idx in selected_idx]
                     tag_lists = [clean_train_graphs[idx].node_tags.append(tag_noise[idx]) for idx in selected_idx]
                     node_features = None

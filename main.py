@@ -300,7 +300,7 @@ def new_main():
         random.shuffle(train_idxes)
 
         # Set loop batch size
-        bsize=cmd_args.batch_size
+        bsize = 10 #cmd_args.batch_size
         total_iters = (len(train_idxes) + (bsize - 1) * (optimizer_theta is None)) // bsize
         pbar = tqdm(range(total_iters), unit='batch')
 

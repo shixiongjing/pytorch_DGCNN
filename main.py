@@ -323,7 +323,6 @@ def new_main():
                     
                     # Update noise to graphs
                     for loop_idx in selected_idx:
-                        print(str(selected_idx))
                         if tag_noise[loop_idx] == -1:
                             tag_noise[loop_idx] = 0
                             clean_train_graphs[loop_idx].append_node()
@@ -333,6 +332,7 @@ def new_main():
 
                     batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g))+adj_noise[idx] for idx in selected_idx]
                     tag_lists = [clean_train_graphs[idx].node_tags.append(tag_noise[idx]) for idx in selected_idx]
+                    print(str(tag_lists[0]))
                     node_features = None
                     labels = [clean_train_graphs[idx].label for idx in selected_idx]
 

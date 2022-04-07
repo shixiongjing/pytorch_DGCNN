@@ -272,7 +272,7 @@ def new_main():
 
     base_model = Classifier()
     if cmd_args.mode == 'gpu':
-        base_model = classifier.cuda()
+        base_model = base_model.cuda()
     optimizer_theta = optim.Adam(base_model.parameters(), lr=cmd_args.learning_rate)
     ##################################
 

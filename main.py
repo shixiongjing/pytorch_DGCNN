@@ -306,7 +306,7 @@ def new_main():
         for pos in pbar:
             selected_idx = train_idxes[pos * bsize : (pos + 1) * bsize]
             # optimize theta for M steps
-            if pos % 21 != 0:
+            if pos % 21 != 20:
                 base_model.train()
                 for param in base_model.parameters():
                     param.requires_grad = True

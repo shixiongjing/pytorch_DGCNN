@@ -117,7 +117,7 @@ class Classifier(nn.Module):
 
     def forward(self, batch_graph, tags, features, labels):
         gs = [nx.from_numpy_array(tensor.numpy()) for tensor in batch_graph]
-        batch_graph = [GNNGraph(g, labels[idx], node_tags[idx], node_features) for idx, g in enumerate(gs)]
+        batch_graph = [GNNGraph(g, labels[idx], tags[idx], features) for idx, g in enumerate(gs)]
         feature_label = self.PrepareFeatureLabel(batch_graph)
         if len(feature_label) == 2:
             node_feat, labels = feature_label

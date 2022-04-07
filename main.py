@@ -340,7 +340,7 @@ def new_main():
                     base_model.eval()
                     #batch_graph, tag_lists, labels = batch_graph.cuda(), tag_lists.cuda(), labels.cuda()
                     optimizer_b = torch.optim.SGD(params=base_model.parameters(), lr=0.1)
-                    num_nodes = [len(tag_lists[idx]) for idx in inside_loop_idx]
+                    num_nodes = [len(clean_train_graphs[idx].node_tags) for idx in inside_loop_idx]
                     perturb_img, eta = noise_generator.min_min_attack(batch_graph, tag_lists, node_features, labels, base_model, optimizer_theta, criterion, 
                                                                       batch_adj_noise, batch_tag_noise, num_nodes)
                     for i, delta in enumerate(eta):

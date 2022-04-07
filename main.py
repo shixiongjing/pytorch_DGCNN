@@ -116,7 +116,7 @@ class Classifier(nn.Module):
         return node_feat, labels
 
     def forward(self, batch_graph, tags, features, labels):
-        gs = [nx.from_scipy_sparse_matrix(tensor.to_sparse_coo()) for tensor in batch_graph]
+        gs = [nx.from_numpy_array(tensor.numpy()) for tensor in batch_graph]
         batch_graph = [GNNGraph(g, labels[idx], node_tags[idx], node_features) for idx, g in enumerate(gs)]
         feature_label = self.PrepareFeatureLabel(batch_graph)
         if len(feature_label) == 2:

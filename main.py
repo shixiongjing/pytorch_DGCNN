@@ -330,7 +330,7 @@ def new_main():
 
                     print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[0].g).shape) + 'b'+str(adj_noise[0].shape))
 
-                    batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g))+adj_noise[train_idx] for idx in selected_idx]
+                    batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g))+adj_noise[idx] for idx in selected_idx]
                     tag_lists = [clean_train_graphs[idx].node_tags.append(tag_noise[idx]) for idx in selected_idx]
                     node_features = None
                     labels = [clean_train_graphs[idx].label for idx in selected_idx]

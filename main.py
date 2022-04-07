@@ -292,7 +292,7 @@ def new_main():
         return [x+1, x+1]
 
     adj_noise = [torch.zeros(get_inc_shape(clean_train_graphs[i])) for i in range(noise_len)]
-    tag_noise = [0 if i < noise_len else 6 for i in range(noise_len+1)]
+    tag_noise = [torch.zeros(clean_train_graphs[i].num_nodes + 1) for i in range(noise_len)]
 
 
     while condition:

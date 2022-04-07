@@ -86,7 +86,7 @@ class GNNGraph(object):
         j = self.num_nodes
         self.num_nodes += 1
 
-        self.node_tags.append(0) # Here just assign to random tag
+        self.node_tags.append(6) # Here just assign to random tag
         self.g.add_node(j)
         self.g.add_edge(j, 1)
         if self.node_features is not None:

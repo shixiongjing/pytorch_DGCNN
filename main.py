@@ -331,7 +331,7 @@ def new_main():
                             #assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
 
                     batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g))+adj_noise[idx] for idx in selected_idx]
-                    tag_lists = [clean_train_graphs[idx].node_tags for idx in selected_idx]
+                    tag_lists = [clean_train_graphs[idx].node_tags + [tag_noise[idx]] for idx in selected_idx]
                     print(str(tag_lists[0]))
                     node_features = None
                     labels = [clean_train_graphs[idx].label for idx in selected_idx]
@@ -356,7 +356,7 @@ def new_main():
                         optimizer_theta.step()
 
                     loss = loss.data.cpu().detach().numpy()
-                    if classifier.regression:
+                    if base_model.regression:
                         pbar.set_description('MSE_loss: %0.5f MAE_loss: %0.5f' % (loss, mae) )
                         total_loss.append( np.array([loss, mae]) * len(selected_idx))
                     else:

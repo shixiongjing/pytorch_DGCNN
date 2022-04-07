@@ -326,7 +326,7 @@ def new_main():
                         if tag_noise[loop_idx] == -1:
                             tag_noise[loop_idx] = 0
                             clean_train_graphs[loop_idx].append_node()
-                            assert sqrt(len(adj_noise[loop_idx])) == clean_train_graphs[loop_idx].num_nodes
+                            assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
 
                     print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[0].g).shape) + 'b'+str(adj_noise[0].shape))
 

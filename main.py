@@ -283,8 +283,6 @@ def new_main():
 
     ##################################
     criterion = torch.nn.CrossEntropyLoss()
-
-
     condition = True
     train_idx = 0
     noise_len = len(clean_train_graphs)
@@ -297,10 +295,12 @@ def new_main():
 
 
     while condition:
+        train_idxes = list(range(len(clean_train_graphs)))
+        random.shuffle(train_idxes)
 
         # Set loop batch size
         bsize=cmd_args.batch_size
-        total_iters = (len(sample_idxes) + (bsize - 1) * (optimizer is None)) // bsize
+        total_iters = (len(train_idxes) + (bsize - 1) * (optimizer is None)) // bsize
         pbar = tqdm(range(total_iters), unit='batch')
 
         for pos in pbar:

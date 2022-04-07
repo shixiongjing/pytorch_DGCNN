@@ -114,7 +114,9 @@ class Classifier(nn.Module):
             return node_feat, edge_feat, labels
         return node_feat, labels
 
-    def forward(self, batch_graph):
+    def forward(self, batch_graph, tags, features, labels):
+        gs = [nx.from_scipy_sparse_matrix(tensor.to_sparse_coo()) for tensor in batch_graph]
+        batch_graph = [GNNGraph(g, labels[idx], node_tags[idx], node_features) for idx, g in enumerate(gs)]
         feature_label = self.PrepareFeatureLabel(batch_graph)
         if len(feature_label) == 2:
             node_feat, labels = feature_label
@@ -147,8 +149,10 @@ def loop_dataset(g_list, classifier, sample_idxes, optimizer=None, bsize=cmd_arg
         selected_idx = sample_idxes[pos * bsize : (pos + 1) * bsize]
 
         batch_graph = [g_list[idx] for idx in selected_idx]
+
+
         # Try modify batch graph data type
-        #batch_graph = [torch.from_numpy(nx.to_scipy_sparse_matrix(g)).to_sparse() for graph.g in g_list]
+        batch_graph = [torch.from_numpy(nx.to_numpy_array(g)).to_sparse() for graph.g in g_list]
         tag_lists = [graph.node_tags for graph in g_list]
         node_features = None
         # End edition
@@ -156,7 +160,7 @@ def loop_dataset(g_list, classifier, sample_idxes, optimizer=None, bsize=cmd_arg
         targets = [g_list[idx].label for idx in selected_idx]
         all_targets += targets
         if classifier.regression:
-            pred, mae, loss = classifier(batch_graph, tag_lists, node_features)
+            pred, mae, loss = classifier(batch_graph, tag_lists, node_features, targets)
             all_scores.append(pred.cpu().detach())  # for binary classification
         else:
             logits, loss, acc = classifier(batch_graph, tag_lists, node_features)

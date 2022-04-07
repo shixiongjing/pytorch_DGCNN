@@ -327,7 +327,7 @@ def new_main():
                         if tag_noise[loop_idx] == -1:
                             tag_noise[loop_idx] = 0
                             clean_train_graphs[loop_idx].append_node()
-                            print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[loop_idx].g).shape) + 'b'+str(adj_noise[loop_idx].shape))
+                            #print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[loop_idx].g).shape) + 'b'+str(adj_noise[loop_idx].shape))
 
                             #assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
 
@@ -340,11 +340,29 @@ def new_main():
                     
                     base_model.zero_grad()
                     optimizer_theta.zero_grad()
-                    logits = base_model(batch_graph, tag_lists, node_features)
-                    loss = criterion(logits, labels)
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(base_model.parameters(), 5.0)
-                    optimizer_theta.step()
+                    
+                    #torch.nn.utils.clip_grad_norm_(base_model.parameters(), 5.0)
+
+                    if base_model.regression:
+                        pred, mae, loss = base_model(batch_graph, tag_lists, node_features, labels)
+                        #all_scores.append(pred.cpu().detach())  # for binary classification
+                    else:
+                        logits, loss, acc = base_model(batch_graph, tag_lists, node_features, labels)
+                        #all_scores.append(logits[:, 1].cpu().detach())  # for binary classification
+
+                    if optimizer_theta is not None:
+                        optimizer_theta.zero_grad()
+                        loss.backward()
+                        optimizer_theta.step()
+
+                    loss = loss.data.cpu().detach().numpy()
+                    if classifier.regression:
+                        pbar.set_description('MSE_loss: %0.5f MAE_loss: %0.5f' % (loss, mae) )
+                        total_loss.append( np.array([loss, mae]) * len(selected_idx))
+                    else:
+                        pbar.set_description('loss: %0.5f acc: %0.5f' % (loss, acc) )
+                        total_loss.append( np.array([loss, acc]) * len(selected_idx))
+
 
                     quit()
             

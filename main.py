@@ -332,7 +332,7 @@ def new_main():
                             #assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
 
                     batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g)).add(adj_noise[idx]) for idx in selected_idx]
-                    tag_lists = [torch.from_numpy(clean_train_graphs[idx].node_tags).add(tag_noise[idx]) for idx in selected_idx]
+                    tag_lists = [torch.FloatTensor(clean_train_graphs[idx].node_tags).add(tag_noise[idx]) for idx in selected_idx]
                     print('size1'+str(len(tag_lists[0]))+'size graph' + str(batch_graph[0].shape))
                     node_features = None
                     labels = [clean_train_graphs[idx].label for idx in selected_idx]

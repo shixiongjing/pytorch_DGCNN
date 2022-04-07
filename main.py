@@ -152,7 +152,7 @@ def loop_dataset(g_list, classifier, sample_idxes, optimizer=None, bsize=cmd_arg
 
 
         # Try modify batch graph data type
-        batch_graph = [torch.from_numpy(nx.to_numpy_array(g)).to_sparse() for graph.g in g_list]
+        batch_graph = [torch.from_numpy(nx.to_numpy_array(graph.g)).to_sparse() for graph in g_list]
         tag_lists = [graph.node_tags for graph in g_list]
         node_features = None
         # End edition

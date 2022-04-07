@@ -23,9 +23,7 @@ class PerturbationTool():
 
     def min_min_attack(self, batch_graph, tag_lists, node_features, labels, base_model, optimizer, criterion, 
                                                                           batch_adj_noise, batch_tag_noise, num_nodes):
-        if noise is None:
-            noise = torch.FloatTensor(*images.shape).uniform_(-self.epsilon, self.epsilon).to(device)
-
+        
         perturb_batch_graph = Variable(torch.stack(batch_graph), requires_grad=True)
         perturb_batch_graph = Variable(torch.clamp(perturb_img, 0, 1), requires_grad=True)
         perturb_tag_lists = Variable(torch.stack(tag_lists), requires_grad=True)

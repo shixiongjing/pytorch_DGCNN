@@ -304,7 +304,7 @@ def new_main():
         pbar = tqdm(range(total_iters), unit='batch')
 
         for pos in pbar:
-            selected_idx = sample_idxes[pos * bsize : (pos + 1) * bsize]
+            selected_idx = train_idxes[pos * bsize : (pos + 1) * bsize]
             # optimize theta for M steps
             if pos % 21 != 0:
                 base_model.train()

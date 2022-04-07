@@ -98,7 +98,7 @@ class GNNGraph(object):
 
     def modify_last_node(self, adj_noise, feat_noise, tag_noise):
         j = self.num_nodes - 1
-        if node_features is not None:
+        if self.node_features is not None:
             self.node_features = self.node_features + feat_noise
         self.node_tags[j] = tag_noise
 

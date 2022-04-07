@@ -295,8 +295,10 @@ def new_main():
     adj_noise = [torch.zeros(get_inc_shape(clean_train_graphs[i])) for i in range(noise_len)]
     tag_noise = [torch.zeros(clean_train_graphs[i].num_nodes + 1) for i in range(noise_len)]
 
-    first_round = True
+    noise_generator = toolbox.PerturbationTool(epsilon=0.03137254901960784, num_steps=20, step_size=0.0031372549019607846)
 
+    for idx in range(len(clean_train_graphs)):
+            clean_train_graphs[idx].append_node()
 
     while condition:
         train_idxes = list(range(len(clean_train_graphs)))
@@ -307,8 +309,7 @@ def new_main():
         total_iters = (len(train_idxes) + (bsize - 1) * (optimizer_theta is None)) // bsize
         pbar = range(total_iters)
 
-        for idx in train_idxes:
-            clean_train_graphs[idx].append_node()
+        
 
         for pos in pbar:
             selected_idx = train_idxes[pos * bsize : (pos + 1) * bsize]

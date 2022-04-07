@@ -25,7 +25,7 @@ class PerturbationTool():
                                                                           batch_adj_noise, batch_tag_noise, num_nodes):
         
         perturb_batch_graph = Variable(torch.stack(batch_graph), requires_grad=True)
-        perturb_batch_graph = Variable(torch.clamp(perturb_img, 0, 1), requires_grad=True)
+        perturb_batch_graph = Variable(torch.clamp(perturb_batch_graph, 0, 1), requires_grad=True)
         perturb_tag_lists = Variable(torch.stack(tag_lists), requires_grad=True)
         eta_adj = batch_adj_noise
         eta_tag = batch_tag_noise

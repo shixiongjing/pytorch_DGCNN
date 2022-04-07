@@ -164,7 +164,7 @@ def loop_dataset(g_list, classifier, sample_idxes, optimizer=None, bsize=cmd_arg
             pred, mae, loss = classifier(batch_graph, tag_lists, node_features, targets)
             all_scores.append(pred.cpu().detach())  # for binary classification
         else:
-            logits, loss, acc = classifier(batch_graph, tag_lists, node_features)
+            logits, loss, acc = classifier(batch_graph, tag_lists, node_features, targets)
             all_scores.append(logits[:, 1].cpu().detach())  # for binary classification
 
         if optimizer is not None:

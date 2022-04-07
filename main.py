@@ -290,7 +290,7 @@ def new_main():
     noise_len = len(clean_train_graphs)
     def get_inc_shape(graph):
         x = graph.num_nodes
-        return [num_nodes+1, num_nodes+1]
+        return [x+1, x+1]
 
     adj_noise = [torch.zeros(get_inc_shape(clean_train_graphs[i])) for i in range(noise_len)]
     tag_noise = [-1 for i in range(noise_len)]

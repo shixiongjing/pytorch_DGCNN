@@ -384,12 +384,12 @@ def new_main():
                     optimizer_theta.step()
 
                 loss = loss.data.cpu().detach().numpy()
-                if base_model.regression:
-                    pbar.set_description('MSE_loss: %0.5f MAE_loss: %0.5f' % (loss, mae))
-                    #total_loss.append( np.array([loss, mae]) * len(selected_idx))
-                else:
-                    pbar.set_description('loss: %0.5f acc: %0.5f' % (loss, acc))
-                    #total_loss.append( np.array([loss, acc]) * len(selected_idx))
+                # if base_model.regression:
+                #     pbar.set_description('MSE_loss: %0.5f MAE_loss: %0.5f' % (loss, mae))
+                #     #total_loss.append( np.array([loss, mae]) * len(selected_idx))
+                # else:
+                #     pbar.set_description('loss: %0.5f acc: %0.5f' % (loss, acc))
+                #     #total_loss.append( np.array([loss, acc]) * len(selected_idx))
             
             continue
                 

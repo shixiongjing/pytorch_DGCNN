@@ -86,15 +86,15 @@ class GNNGraph(object):
         j = self.num_nodes
         self.num_nodes += 1
 
-        self.node_tags.append(7) # Here just assign to random tag
+        self.node_tags.append(0) # Here just assign to random tag
         self.g.add_node(j)
         self.g.add_edge(j, 1)
         if node_features is not None:
             feature_size = self.node_features.shape
             noise_X = np.zeros((1, feature_size[1]))
             self.node_features = np.append(self.node_features, noise_X, axis = 0)
-        self.degs = list(dict(g.degree).values())
-        self.edge_pairs = np.append(self.edge_pairs, [j,1])
+        # self.degs = list(dict(g.degree).values())
+        # self.edge_pairs = np.append(self.edge_pairs, [j,1])
 
     def modify_last_node(self, adj_noise, feat_noise, tag_noise):
         j = self.num_nodes - 1

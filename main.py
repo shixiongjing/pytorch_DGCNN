@@ -253,14 +253,16 @@ def old_main():
         labels = labels.type('torch.FloatTensor')
         np.savetxt('extracted_features_test.txt', torch.cat([labels.unsqueeze(1), features.cpu()], dim=1).detach().numpy(), '%.4f')
 
+
 def new_main():
+
     print(cmd_args)
     random.seed(cmd_args.seed)
     np.random.seed(cmd_args.seed)
     torch.manual_seed(cmd_args.seed)
 
-    train_graphs, test_graphs = load_data()
-    print('# train: %d, # test: %d' % (len(train_graphs), len(test_graphs)))
+    clean_train_graphs, test_graphs = load_data()
+    print('# train: %d, # test: %d' % (len(clean_train_graphs), len(test_graphs)))
 
     if cmd_args.sortpooling_k <= 1:
         num_nodes_list = sorted([g.num_nodes for g in train_graphs + test_graphs])
@@ -268,42 +270,114 @@ def new_main():
         cmd_args.sortpooling_k = max(10, cmd_args.sortpooling_k)
         print('k used in SortPooling is: ' + str(cmd_args.sortpooling_k))
 
-    classifier = Classifier()
+    base_model = Classifier()
     if cmd_args.mode == 'gpu':
-        classifier = classifier.cuda()
+        base_model = classifier.cuda()
+    optimizer_theta = optim.Adam(base_model.parameters(), lr=cmd_args.learning_rate)
+    ##################################
 
-    optimizer = optim.Adam(classifier.parameters(), lr=cmd_args.learning_rate)
 
-    train_idxes = list(range(len(train_graphs)))
-    best_loss = None
-    for epoch in range(cmd_args.num_epochs):
-        random.shuffle(train_idxes)
-        classifier.train()
-        avg_loss = loop_dataset(train_graphs, classifier, train_idxes, optimizer=optimizer)
-        if not cmd_args.printAUC:
-            avg_loss[2] = 0.0
-        print('\033[92maverage training of epoch %d: loss %.5f acc %.5f auc %.5f\033[0m' % (epoch, avg_loss[0], avg_loss[1], avg_loss[2]))
+    # Training the EM noise
 
-        classifier.eval()
-        test_loss = loop_dataset(test_graphs, classifier, list(range(len(test_graphs))))
-        if not cmd_args.printAUC:
-            test_loss[2] = 0.0
-        print('\033[93maverage test of epoch %d: loss %.5f acc %.5f auc %.5f\033[0m' % (epoch, test_loss[0], test_loss[1], test_loss[2]))
 
-    with open(cmd_args.data + '_acc_results.txt', 'a+') as f:
-        f.write(str(test_loss[1]) + '\n')
 
-    if cmd_args.printAUC:
-        with open(cmd_args.data + '_auc_results.txt', 'a+') as f:
-            f.write(str(test_loss[2]) + '\n')
+    ##################################
+    criterion = torch.nn.CrossEntropyLoss()
 
-    if cmd_args.extract_features:
-        features, labels = classifier.output_features(train_graphs)
-        labels = labels.type('torch.FloatTensor')
-        np.savetxt('extracted_features_train.txt', torch.cat([labels.unsqueeze(1), features.cpu()], dim=1).detach().numpy(), '%.4f')
-        features, labels = classifier.output_features(test_graphs)
-        labels = labels.type('torch.FloatTensor')
-        np.savetxt('extracted_features_test.txt', torch.cat([labels.unsqueeze(1), features.cpu()], dim=1).detach().numpy(), '%.4f')
+
+    condition = True
+    train_idx = 0
+    noise_len = len(clean_train_graphs)
+    adj_noise = [torch.zeros(clean_train_graphs[i].shape) for i in range(noise_len)]
+    tag_noise = [-1 for i in range(noise_len)]
+
+
+    while condition:
+
+        # Set loop batch size
+        bsize=cmd_args.batch_size
+        total_iters = (len(sample_idxes) + (bsize - 1) * (optimizer is None)) // bsize
+        pbar = tqdm(range(total_iters), unit='batch')
+
+        for pos in pbar:
+            selected_idx = sample_idxes[pos * bsize : (pos + 1) * bsize]
+            # optimize theta for M steps
+            if pos % 21 != 0:
+                base_model.train()
+                for param in base_model.parameters():
+                    param.requires_grad = True
+                
+                # for j in range(0, 10):
+                #     try:
+                #         graph = next(data_iter)
+                #     except:
+                #         train_idx = 0
+                #         data_iter = iter(clean_train_graphs)
+                #         graph = next(data_iter)
+                    
+                    
+                    # Update noise to graphs
+                    for loop_idx in selected_idx:
+                        if tag_noise[loop_idx] == -1:
+                            tag_noise[loop_idx] = 0
+                            g_list[loop_idx].append_node()
+
+                    batch_graph = [torch.from_numpy(nx.to_numpy_array(g_list[idx].g))+adj_noise[train_idx] for idx in selected_idx]
+                    tag_lists = [g_list[idx].node_tags.append(tag_noise[idx]) for idx in selected_idx]
+                    node_features = None
+                    labels = [g_list[idx].label for idx in selected_idx]
+
+
+                    
+                    base_model.zero_grad()
+                    optimizer_theta.zero_grad()
+                    logits = base_model(batch_graph, tag_lists, node_features)
+                    loss = criterion(logits, labels)
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(base_model.parameters(), 5.0)
+                    optimizer_theta.step()
+
+                    quit()
+            
+            else:
+                # Perturbation over entire dataset
+                idx = 0
+                for param in base_model.parameters():
+                    param.requires_grad = False
+                for i, graph in tqdm(enumerate(clean_train_loader), total=len(clean_train_loader)):
+                    batch_start_idx, batch_noise = idx, []
+                    
+                    # Update noise to images
+                    batch_noise.append(noise[idx])
+                    idx += 1
+                    batch_noise = torch.stack(batch_noise).cuda()
+                    
+                    # Update sample-wise perturbation
+                    base_model.eval()
+                    images, labels = images.cuda(), labels.cuda()
+                    perturb_img, eta = noise_generator.min_min_attack(images, labels, base_model, optimizer, criterion, 
+                                                                      random_noise=batch_noise)
+                    for i, delta in enumerate(eta):
+                        noise[batch_start_idx+i] = delta.clone().detach().cpu()
+                
+            # Eval stop condition
+            eval_idx, total, correct = 0, 0, 0
+            for i, (images, labels) in enumerate(clean_train_loader):
+                for i, _ in enumerate(images):
+                    # Update noise to images
+                    images[i] += noise[eval_idx]
+                    eval_idx += 1
+                images, labels = images.cuda(), labels.cuda()
+                with torch.no_grad():
+                    logits = base_model(images)
+                    _, predicted = torch.max(logits.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+            acc = correct / total
+            print('Accuracy %.2f' % (acc*100))
+            if acc > 0.99:
+                condition=False      
+
 
 
 if __name__ == '__main__':

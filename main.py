@@ -328,7 +328,7 @@ def new_main():
                             clean_train_graphs[loop_idx].append_node()
                             print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[loop_idx].g).shape) + 'b'+str(adj_noise[loop_idx].shape))
 
-                            assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
+                            #assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
 
                     
                     batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g))+adj_noise[idx] for idx in selected_idx]

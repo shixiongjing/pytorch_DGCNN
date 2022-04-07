@@ -88,7 +88,7 @@ class GNNGraph(object):
 
         self.node_tags.append(6) # Here just assign to random tag
         self.g.add_node(j)
-        self.g.add_edge(j, 1)
+        self.g.add_edge(j, 1, weight=0.00001)
         if self.node_features is not None:
             feature_size = self.node_features.shape
             noise_X = np.zeros((1, feature_size[1]))

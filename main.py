@@ -16,6 +16,7 @@ from mlp_dropout import MLPClassifier, MLPRegression
 from sklearn import metrics
 from util import cmd_args, load_data, GNNGraph
 import networkx as nx
+import toolbox
 
 option = 1
 
@@ -302,91 +303,96 @@ def new_main():
         random.shuffle(train_idxes)
 
         # Set loop batch size
-        bsize = 10 #cmd_args.batch_size
+        bsize = cmd_args.batch_size
         total_iters = (len(train_idxes) + (bsize - 1) * (optimizer_theta is None)) // bsize
-        pbar = tqdm(range(total_iters), unit='batch')
+        pbar = range(total_iters)
+
+        for idx in train_idxes:
+            clean_train_graphs[idx].append_node()
 
         for pos in pbar:
             selected_idx = train_idxes[pos * bsize : (pos + 1) * bsize]
-            # optimize theta for M steps
-            if pos % 21 != 20:
-                base_model.train()
-                for param in base_model.parameters():
-                    param.requires_grad = True
-                
-                # for j in range(0, 10):
-                #     try:
-                #         graph = next(data_iter)
-                #     except:
-                #         train_idx = 0
-                #         data_iter = iter(clean_train_graphs)
-                #         graph = next(data_iter)
-                    
-                    
-                    # Update noise to graphs
-                    for loop_idx in selected_idx:
-                        if first_round:
-                            clean_train_graphs[loop_idx].append_node()
-                            #print('size of train:'+str(nx.to_numpy_array(clean_train_graphs[loop_idx].g).shape) + 'b'+str(adj_noise[loop_idx].shape))
-
-                            #assert len(adj_noise[loop_idx]) == (clean_train_graphs[loop_idx].num_nodes)**2
-
-                    batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g)).add(adj_noise[idx]) for idx in selected_idx]
-                    tag_lists = [torch.FloatTensor(clean_train_graphs[idx].node_tags).add(tag_noise[idx]) for idx in selected_idx]
-                    print('size1'+str(len(tag_lists[0]))+'size graph' + str(batch_graph[0].shape))
-                    node_features = None
-                    labels = [clean_train_graphs[idx].label for idx in selected_idx]
-
-
-                    
-                    base_model.zero_grad()
-                    optimizer_theta.zero_grad()
-                    
-                    #torch.nn.utils.clip_grad_norm_(base_model.parameters(), 5.0)
-
-                    if base_model.regression:
-                        pred, mae, loss = base_model(batch_graph, tag_lists, node_features, labels)
-                        #all_scores.append(pred.cpu().detach())  # for binary classification
-                    else:
-                        logits, loss, acc = base_model(batch_graph, tag_lists, node_features, labels)
-                        #all_scores.append(logits[:, 1].cpu().detach())  # for binary classification
-
-                    if optimizer_theta is not None:
-                        optimizer_theta.zero_grad()
-                        loss.backward()
-                        optimizer_theta.step()
-
-                    loss = loss.data.cpu().detach().numpy()
-                    if base_model.regression:
-                        pbar.set_description('MSE_loss: %0.5f MAE_loss: %0.5f' % (loss, mae) )
-                        #total_loss.append( np.array([loss, mae]) * len(selected_idx))
-                    else:
-                        pbar.set_description('loss: %0.5f acc: %0.5f' % (loss, acc) )
-                        #total_loss.append( np.array([loss, acc]) * len(selected_idx))
-
-
-                    quit()
             
-            else:
+            if pos % 11 == 10:
                 # Perturbation over entire dataset
-                idx = 0
-                for param in base_model.parameters():
-                    param.requires_grad = False
-                for i, graph in tqdm(enumerate(clean_train_loader), total=len(clean_train_loader)):
-                    batch_start_idx, batch_noise = idx, []
+                pbar_inside = tqdm(range(total_iters), unit='batch')
+                for ipos in pbar_inside:
+                    inside_loop_idx = train_idxes[ipos * bsize : (ipos + 1) * bsize]
+                    for param in base_model.parameters():
+                        param.requires_grad = False
+
+                    
+
+                    batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g)).add(adj_noise[idx]) for idx in inside_loop_idx]
+                    tag_lists = [torch.FloatTensor(clean_train_graphs[idx].node_tags).add(tag_noise[idx]) for idx in inside_loop_idx]
+                    #print('size1'+str(len(tag_lists[0]))+'size graph' + str(batch_graph[0].shape))
+                    node_features = None
+                    labels = [clean_train_graphs[idx].label for idx in inside_loop_idx]
+
                     
                     # Update noise to images
-                    batch_noise.append(noise[idx])
-                    idx += 1
-                    batch_noise = torch.stack(batch_noise).cuda()
+                    batch_adj_noise = [adj_noise[idx] for idx in inside_loop_idx]
+                    batch_tag_noise = [tag_noise[idx] for idx in inside_loop_idx]
+                    batch_adj_noise = torch.stack(batch_adj_noise).cuda()
+                    batch_tag_noise = torch.stack(batch_tag_noise).cuda()
                     
                     # Update sample-wise perturbation
                     base_model.eval()
-                    images, labels = images.cuda(), labels.cuda()
-                    perturb_img, eta = noise_generator.min_min_attack(images, labels, base_model, optimizer, criterion, 
-                                                                      random_noise=batch_noise)
+                    #batch_graph, tag_lists, labels = batch_graph.cuda(), tag_lists.cuda(), labels.cuda()
+                    optimizer_b = torch.optim.SGD(params=base_model.parameters(), lr=0.1)
+                    num_nodes = [len(tag_lists[idx]) for idx in inside_loop_idx]
+                    perturb_img, eta = noise_generator.min_min_attack(batch_graph, tag_lists, node_features, labels, base_model, optimizer_theta, criterion, 
+                                                                      batch_adj_noise, batch_tag_noise, num_nodes)
                     for i, delta in enumerate(eta):
                         noise[batch_start_idx+i] = delta.clone().detach().cpu()
+
+            # Otherwise
+            # optimize theta for M steps
+            base_model.train()
+            for param in base_model.parameters():
+                param.requires_grad = True
+                
+                
+                # Update noise to graphs
+                # for loop_idx in selected_idx:
+                #     if first_round:
+                #         clean_train_graphs[loop_idx].append_node()
+
+                batch_graph = [torch.from_numpy(nx.to_numpy_array(clean_train_graphs[idx].g)).add(adj_noise[idx]) for idx in selected_idx]
+                tag_lists = [torch.FloatTensor(clean_train_graphs[idx].node_tags).add(tag_noise[idx]) for idx in selected_idx]
+                print('size1'+str(len(tag_lists[0]))+'size graph' + str(batch_graph[0].shape))
+                node_features = None
+                labels = [clean_train_graphs[idx].label for idx in selected_idx]
+
+
+                
+                base_model.zero_grad()
+                optimizer_theta.zero_grad()
+                
+                #torch.nn.utils.clip_grad_norm_(base_model.parameters(), 5.0)
+
+                if base_model.regression:
+                    pred, mae, loss = base_model(batch_graph, tag_lists, node_features, labels)
+                    #all_scores.append(pred.cpu().detach())  # for binary classification
+                else:
+                    logits, loss, acc = base_model(batch_graph, tag_lists, node_features, labels)
+                    #all_scores.append(logits[:, 1].cpu().detach())  # for binary classification
+
+                if optimizer_theta is not None:
+                    optimizer_theta.zero_grad()
+                    loss.backward()
+                    optimizer_theta.step()
+
+                loss = loss.data.cpu().detach().numpy()
+                if base_model.regression:
+                    pbar.set_description('MSE_loss: %0.5f MAE_loss: %0.5f' % (loss, mae))
+                    #total_loss.append( np.array([loss, mae]) * len(selected_idx))
+                else:
+                    pbar.set_description('loss: %0.5f acc: %0.5f' % (loss, acc))
+                    #total_loss.append( np.array([loss, acc]) * len(selected_idx))
+            
+            continue
+                
                 
             # Eval stop condition
             eval_idx, total, correct = 0, 0, 0
